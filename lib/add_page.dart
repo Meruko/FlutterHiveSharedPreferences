@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 import 'item.dart';
 import 'main.dart';
 
@@ -30,7 +31,7 @@ class _AddPage extends State<AddPage> {
       appBar: AppBar(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          box.add(Item(box.values.length+1, _controller.text));
+          context.read<BoxHelper>().add(Item(box.values.length+1, _controller.text));
           needLoading = true;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Добавлено!!!!'))

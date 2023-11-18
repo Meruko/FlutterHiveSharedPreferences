@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:lists_nav/item.dart';
+import 'package:provider/provider.dart';
 import 'main.dart';
 
 String _hiveName = "hive_items";
@@ -34,7 +35,7 @@ class _EditPage extends State<EditPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           item.setName = _controller.text;
-          box.put(item.key, item);
+          context.read<BoxHelper>().edit(item);
           needLoading = true;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Именено!!!!'))

@@ -49,8 +49,12 @@ class MyApp extends StatelessWidget {
           create: (_) => ThemeChanger(theme),
           lazy: true,
         ),
+        ChangeNotifierProvider(
+          create: (_) => BoxHelper(Hive.box(_hiveName)),
+          lazy: true,
+        )
       ],
-      child: MaterialAppWithTheme(),
+      child: const MaterialAppWithTheme(),
     );
   }
 }
@@ -96,6 +100,39 @@ class MaterialAppWithTheme extends StatelessWidget {
   }
 }
 
+class BoxHelper with ChangeNotifier{
+  late final Box<Item> box;
+
+  void replace(int oldIndex, int newIndex){
+    if (newIndex > oldIndex){
+      newIndex -= 1;
+    }
+    
+    Item item = box.values.toList().removeAt(oldIndex);
+    box.values.toList().insert(newIndex, item);
+    notifyListeners();
+  }
+
+  List<Item> get(){
+    return box.values.toList();
+  }
+
+  void add(Item item){
+    box.add(item);
+    notifyListeners();
+  }
+
+  void edit(Item item){
+    box.put(item.key, item);
+    notifyListeners();
+  }
+
+  void delete(int index){
+    box.delete(box.values.toList()[index].key);
+  }
+
+  BoxHelper(this.box);
+}
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -107,13 +144,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late final Box<Item> box;
+  
   
   @override
   void initState() {
     super.initState();
-
-    box = Hive.box(_hiveName);
   }
 
   @override
@@ -122,26 +157,20 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  deleteInfo(int index) {
-    box.delete(box.values.toList()[index].key);
-  }
-
   @override
   Widget build(BuildContext context) {
-    items = box.values.toList();
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.background,
         title: Text(widget.title),
         actions: [
           Padding(
-            padding: EdgeInsets.only(right: 20.0),
+            padding: const EdgeInsets.only(right: 20.0),
             child: GestureDetector(
               onTap: () {
                 Navigator.pushNamed(context, 'settings');
               },
-              child: Icon(
+              child: const Icon(
                 Icons.settings,
                 size: 26.0,
               ),
@@ -150,9 +179,9 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       body: ReorderableListView.builder(
-        itemCount: items.length,
+        itemCount: context.watch<BoxHelper>().get().length,
         itemBuilder: (context, index) {
-          final Item item = items[index];
+          final Item item = context.watch<BoxHelper>().get()[index];
 
           return Card(
             key: Key(index.toString()),
@@ -185,10 +214,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     icon: const Icon(Icons.delete),
                     color: Colors.red[300],
                     onPressed: () {
-                      deleteInfo(index);
-                      setState(() {
-                        needLoading = true;
-                      });
+                      context.read<BoxHelper>().delete(index);
                     },
                   ),
                 ),
@@ -197,34 +223,16 @@ class _MyHomePageState extends State<MyHomePage> {
           );
         },
         onReorder: ((oldIndex, newIndex) {
-          if (newIndex > oldIndex){
-            newIndex -= 1;
-          }
-          
-          Item item = items.removeAt(oldIndex);
-          items.insert(newIndex, item);
+          context.read<BoxHelper>().replace(oldIndex, newIndex);
         }),
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(left: 30),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            FloatingActionButton(
-              onPressed: () {
-                setState(() {
-                  
-                });
-              },
-              child: const Icon(Icons.update),
-            ),
-            FloatingActionButton(
-              onPressed: () {
-                Navigator.pushNamed(context, 'add');
-              },
-              child: const Icon(Icons.add),
-            ),
-          ],
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.pushNamed(context, 'add');
+          },
+          child: const Icon(Icons.add),
         ),
       ),
     );
